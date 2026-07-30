@@ -36,6 +36,59 @@ The TTB Label Compliance Review Assistant automates field-by-field verification 
 
 ---
 
+## Sample Benchmark Data & "Needs Review" Examples
+
+The repository includes **50 realistic AI-generated alcohol label artwork images** in `sample_data/labels/` and metadata in `sample_data/batch_50_metadata.csv`, fully committed and pushed to git.
+
+### Benchmark Dataset Scenarios:
+- **`PASS` Cases (Scenarios 01 – 20)**: Fully compliant label artwork for Bourbon, Scotch, Rye, Wine, Tequila, Rum, Vodka, Gin, IPA, Cider, Brandy, and Mezcal.
+- **`FIELD MISMATCH` Rejections (Scenarios 21 – 30)**: Intentional metadata mismatches (e.g. `45% ABV` on artwork vs `40% ABV` in metadata, wrong Net Contents, missing country of origin).
+- **`NEEDS REVIEW` Cases (Scenarios 31 – 40)**: Subtle nuances requiring human compliance agent judgment:
+  - `caps_diff_31_tequila_accent.png`: `EL JIMADOR` vs `EL JIMADÓR` (Diacritic / Accent accentuation)
+  - `caps_diff_32_stones_throw_punctuation.png`: `STONE'S THROW` vs `STONES THROW` (Apostrophe punctuation difference)
+  - `caps_diff_33_mixed_case_brand.png`: `OLD FORESTER` vs `Old Forester` (Casing variation)
+  - `caps_diff_34_accent_french_wine.png`: `CHÂTEAU MARGAUX` vs `CHATEAU MARGAUX` (French circumflex accent)
+  - `caps_diff_35_spacing_brand.png`: `DON JULIO` vs `DONJULIO` (Word boundary spacing)
+  - `caps_diff_36_lowercase_class.png`: `STRAIGHT BOURBON WHISKEY` vs `Straight Bourbon Whiskey`
+  - `caps_diff_37_short_abbrev.png`: `ALC. 45% BY VOL.` vs `ALC 45% BY VOL`
+  - `caps_diff_38_title_case_bottler.png`: `KENTUCKY DISTILLERS CO.` vs `Kentucky Distillers Co.`
+  - `caps_diff_39_german_umlaut.png`: `JÄGERMEISTER` vs `JAGERMEISTER` (German Umlaut character)
+  - `caps_diff_40_trailing_dot.png`: `PRODUCED BY HEINEKEN BREWING.` vs `PRODUCED BY HEINEKEN BREWING`
+- **`WARNING FAIL` Rejections (Scenarios 41 – 50)**: Strict 27 CFR Part 16 Government Warning violations (lowercase header, missing Surgeon General clause, altered wording).
+
+---
+
+## Application Metadata CSV Format
+
+When uploading a metadata CSV file (or running batch verification), the system expects a CSV file containing the following column headers:
+
+### Required & Optional Column Specifications
+
+| CSV Column Header | Mandatory / Optional | Description & Example |
+| :--- | :--- | :--- |
+| `application_id` | **Mandatory** | Unique COLA application identifier (e.g., `COLA-2026-001`) |
+| `brand_name` | **Mandatory** | Brand name as stated on application (e.g., `WOODFORD RESERVE`) |
+| `class_type` | **Mandatory** | Class & Type designation (e.g., `KENTUCKY STRAIGHT BOURBON WHISKEY`) |
+| `alcohol_content` | **Mandatory** | ABV percentage declaration (e.g., `45.2% ALC/VOL`) |
+| `proof` | *Optional* | Proof declaration (e.g., `90.4 PROOF`). Marked `[NOT REQUIRED]` if missing on artwork when ABV % is present per TTB regulations. |
+| `net_contents` | **Mandatory** | Net volume declaration (e.g., `750 ML` or `1 LITER`) |
+| `bottler_producer` | **Mandatory** | Bottler / Producer name & address (e.g., `BROWN-FORMAN DISTILLERS, LOUISVILLE, KY`) |
+| `country_of_origin` | **Mandatory** | Country of origin (e.g., `USA`, `MEXICO`, `FRANCE`) |
+| `government_warning` | **Mandatory** | Expected Title 27 CFR 16 warning statement |
+| `image_filename` | *Optional* | Name of corresponding label artwork file in batch ZIP (e.g., `pass_01_bourbon.png`) |
+
+### Sample Metadata CSV File (`sample_data/applications_metadata.csv`)
+
+```csv
+application_id,brand_name,class_type,alcohol_content,proof,net_contents,bottler_producer,country_of_origin,government_warning,image_filename
+COLA-PASS-2026-01,WOODFORD RESERVE,KENTUCKY STRAIGHT BOURBON WHISKEY,45.2% ALC/VOL,90.4 PROOF,750 ML,"BROWN-FORMAN DISTILLERS, LOUISVILLE, KY",USA,"GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",pass_01_bourbon.png
+COLA-FAIL-2026-21,BUFFALO TRACE,KENTUCKY STRAIGHT BOURBON WHISKEY,40.0% ALC/VOL,80.0 PROOF,750 ML,"BUFFALO TRACE DISTILLERY, FRANKFORT, KY",USA,"GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",fail_mismatch_21_abv.png
+COLA-REVIEW-2026-31,EL JIMADOR,TEQUILA BLANCO 100% DE AGAVE,40% ALC/VOL,80 PROOF,750 ML,"CASA HERRADURA, AMATITAN, JALISCO",MEXICO,"GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",caps_diff_31_tequila_accent.png
+COLA-WARNFAIL-2026-41,SIERRA NEVADA,PALE ALE CRAFT BEER,5.6% ALC/VOL,11.2 PROOF,12 FL. OZ.,"SIERRA NEVADA BREWING CO., CHICO, CA",USA,"government warning: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",warning_fail_41_lowercase_header.png
+```
+
+---
+
 ## Docker Container Deployment
 
 The application includes a production-ready **[Dockerfile](file:///Users/yeshabaxi/Documents/AlcoholLabelVerification/Dockerfile)** that bundles Python 3.11, Tesseract OCR, system dependencies, fonts, and the 50-scenario benchmark suite into a single self-contained container image.
