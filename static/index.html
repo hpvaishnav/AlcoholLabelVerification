@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTB Alcohol Label Compliance Review Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Simplified Bar -->
+    <header class="navbar">
+        <div class="brand-container">
+            <div class="logo-emblem">TTB</div>
+            <div>
+                <h1 class="nav-title">Alcohol Label Compliance Reviewer</h1>
+                <span class="nav-subtitle">AI Assistant for Alcohol Label Verification</span>
+            </div>
+        </div>
+
+        <!-- Top Right Admin Dropdown (Small & Subtle) -->
+        <div class="admin-menu-container">
+            <button class="admin-menu-btn" onclick="toggleAdminMenu()">⚙ Admin & System Logs ▾</button>
+            <div class="admin-dropdown hidden" id="admin-dropdown-box">
+                <div class="dropdown-header">📦 50-Item Bulk Batch Demo</div>
+                <button class="dropdown-item demo-item-batch" onclick="loadDemoBatchDemo()">🚀 Run 50-Item Batch Demo</button>
+
+                <div class="dropdown-header">🟢 PASS Scenarios (1 - 20)</div>
+                <div class="scroll-submenu" id="pass-scenarios-menu">
+                    <!-- Dynamic Pass Items 1-20 -->
+                </div>
+
+                <div class="dropdown-header">🔴 FIELD MISMATCH FAILS (21 - 30)</div>
+                <div class="scroll-submenu" id="fail-scenarios-menu">
+                    <!-- Dynamic Fail Items 21-30 -->
+                </div>
+
+                <div class="dropdown-header">🟡 CAPS & ACCENT REVIEWS (31 - 40)</div>
+                <div class="scroll-submenu" id="review-scenarios-menu">
+                    <!-- Dynamic Review Items 31-40 -->
+                </div>
+
+                <div class="dropdown-header">⚠️ WARNING STRICT FAILS (41 - 50)</div>
+                <div class="scroll-submenu" id="warning-scenarios-menu">
+                    <!-- Dynamic Warning Items 41-50 -->
+                </div>
+
+                <div class="dropdown-header">System & Regulatory Information</div>
+                <button class="dropdown-item" onclick="openAdminModal('config')">📋 System Configuration</button>
+                <button class="dropdown-item" onclick="openAdminModal('bom')">📦 Software BOM & Licenses</button>
+                <button class="dropdown-item" onclick="openAdminModal('docs')">📖 Regulatory Documentation</button>
+                <button class="dropdown-item" onclick="openAdminModal('audit')">📜 Human Override Audit Logs</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mode Toggle Switch (Single Review vs Batch Upload) -->
+    <div class="mode-toggle-container">
+        <div class="toggle-switch">
+            <button class="toggle-btn active" id="btn-mode-single" onclick="setMode('single')">🔍 Check Single Label</button>
+            <button class="toggle-btn" id="btn-mode-batch" onclick="setMode('batch')">📦 Check Multiple Labels (Batch)</button>
+        </div>
+    </div>
+
+    <main class="main-container">
+
+        <!-- SINGLE LABEL REVIEW MODE -->
+        <section id="mode-single-section" class="mode-section active">
+            
+            <!-- User File Upload Card -->
+            <div class="upload-card">
+                <h2>Upload Application Artwork & Metadata</h2>
+                <div class="upload-inputs-grid">
+                    <!-- Primary Image Upload -->
+                    <div class="upload-box" onclick="document.getElementById('user-img-file').click()">
+                        <div class="upload-box-icon">📷</div>
+                        <h3 id="img-file-label">Click to Select Label Artwork Image</h3>
+                        <p class="upload-box-sub">Supports JPEG or PNG formats</p>
+                        <input type="file" id="user-img-file" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
+                    </div>
+
+                    <!-- Optional Metadata CSV Upload -->
+                    <div class="upload-box upload-box-secondary" onclick="document.getElementById('user-csv-file').click()">
+                        <div class="upload-box-icon">📄</div>
+                        <h3 id="csv-file-label">Attach Metadata CSV (Optional)</h3>
+                        <p class="upload-box-sub">If omitted, OCR extracts artwork fields</p>
+                        <input type="file" id="user-csv-file" accept=".csv" class="hidden" onchange="handleCsvSelect(event)">
+                    </div>
+                </div>
+
+                <div class="upload-action-bar">
+                    <button class="btn btn-primary btn-large" onclick="submitUserSingleUpload()">🔍 Run Compliance Verification</button>
+                </div>
+            </div>
+
+            <!-- RESULTS SECTION (HIDDEN BY DEFAULT UNTIL UPLOAD OR DEMO SELECT) -->
+            <div id="results-section" class="hidden">
+                <!-- Giant Status Banner -->
+                <div class="giant-banner banner-pass" id="giant-status-banner">
+                    <div class="banner-icon" id="banner-icon">✓</div>
+                    <div class="banner-content">
+                        <h2 id="banner-status-text">PASS - COMPLIANT</h2>
+                        <p id="banner-summary-text">All required label artwork fields and Government Warning statements match metadata with high confidence.</p>
+                    </div>
+                </div>
+
+                <div class="review-grid">
+                    <!-- Left: Giant Label Artwork Viewer -->
+                    <div class="panel artwork-panel">
+                        <div class="panel-header">
+                            <h2>Label Artwork Image</h2>
+                            <span class="app-id-pill" id="single-app-id">COLA-DEMO-001</span>
+                        </div>
+                        <div class="artwork-box">
+                            <img id="label-image-view" src="/labels/pass_01_bourbon.png" alt="Alcohol Label Artwork">
+                        </div>
+                    </div>
+
+                    <!-- Right: Field Comparison Cards -->
+                    <div class="panel verification-panel">
+                        <div class="panel-header">
+                            <h2>Label Field Verification</h2>
+                            <span class="speed-tag" id="single-speed-tag">Speed: 0.18s</span>
+                        </div>
+
+                        <div class="fields-list" id="fields-matrix-container">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- BATCH PROCESSING MODE -->
+        <section id="mode-batch-section" class="mode-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Multiple Application Batch Verification</h2>
+                </div>
+
+                <div class="upload-inputs-grid" style="margin-bottom: 1.5rem;">
+                    <!-- Primary Batch Artwork Images / ZIP Upload -->
+                    <div class="upload-box" onclick="document.getElementById('user-batch-images').click()">
+                        <div class="upload-box-icon">📁</div>
+                        <h3 id="batch-images-label">Select Multiple Label Images or ZIP Archive</h3>
+                        <p class="upload-box-sub">Select multiple PNG/JPEG files or drop a .ZIP file</p>
+                        <input type="file" id="user-batch-images" accept="image/*, .zip" multiple class="hidden" onchange="handleBatchImagesSelect(event)">
+                    </div>
+
+                    <!-- Optional Batch Metadata CSV -->
+                    <div class="upload-box upload-box-secondary" onclick="document.getElementById('user-batch-csv').click()">
+                        <div class="upload-box-icon">📄</div>
+                        <h3 id="batch-csv-label">Attach Metadata CSV (Optional)</h3>
+                        <p class="upload-box-sub">Optional CSV for form comparison</p>
+                        <input type="file" id="user-batch-csv" accept=".csv" class="hidden" onchange="handleBatchCsvSelect(event)">
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <button class="btn btn-primary btn-large" onclick="submitBatchUpload()">🚀 Start Batch Processing</button>
+                </div>
+
+                <!-- Live Progress Card -->
+                <div class="batch-progress-card hidden" id="batch-progress-box">
+                    <div class="progress-top">
+                        <span class="progress-title" id="batch-status-text">Status: Processing...</span>
+                        <span class="progress-speed" id="batch-speed-text">Processing Speed: 0.05s / label</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="batch-progress-fill" style="width: 0%;"></div>
+                    </div>
+
+                    <!-- 3 Giant Stat Counters (Clickable Interactive Filters!) -->
+                    <div class="stat-counters">
+                        <div class="stat-card stat-pass clickable-stat" id="stat-card-pass" onclick="filterBatchTable('PASS')">
+                            <span class="stat-count" id="stat-pass">0</span>
+                            <span class="stat-name">Passing (PASS)</span>
+                            <span class="stat-hint">Click to Filter Table</span>
+                        </div>
+                        <div class="stat-card stat-review clickable-stat" id="stat-card-review" onclick="filterBatchTable('NEEDS REVIEW')">
+                            <span class="stat-count" id="stat-review">0</span>
+                            <span class="stat-name">Needs Human Review</span>
+                            <span class="stat-hint">Click to Filter Table</span>
+                        </div>
+                        <div class="stat-card stat-reject clickable-stat" id="stat-card-reject" onclick="filterBatchTable('REJECT')">
+                            <span class="stat-count" id="stat-reject">0</span>
+                            <span class="stat-name">Rejected (REJECT)</span>
+                            <span class="stat-hint">Click to Filter Table</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Bar -->
+                <div class="export-bar">
+                    <div>
+                        <h3 id="table-filter-title">Batch Review Findings Table (All Items)</h3>
+                        <span class="filter-reset-link hidden" id="filter-reset-btn" onclick="filterBatchTable('ALL')">🔄 Clear Filter (Show All Items)</span>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="exportBatch('csv')">Download CSV Report</button>
+                        <button class="btn btn-secondary" onclick="exportBatch('json')">Download JSON Audit</button>
+                    </div>
+                </div>
+
+                <!-- Simple Table -->
+                <div class="table-wrapper">
+                    <table class="simple-table">
+                        <thead>
+                            <tr>
+                                <th>App ID</th>
+                                <th>Compliance Decision</th>
+                                <th>Reason & Verification Analysis</th>
+                                <th>Time</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batch-table-body">
+                            <tr>
+                                <td colspan="5" class="text-center">Upload multiple images / ZIP or run Demo Batch from Admin menu to start.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Batch Item Inspection Modal Overlay -->
+    <div class="modal-overlay hidden" id="inspect-modal">
+        <div class="modal-card modal-extra-large">
+            <div class="modal-header">
+                <div>
+                    <h2>Batch Item Compliance Inspection</h2>
+                    <span class="app-id-pill" id="inspect-app-id">COLA-DEMO-001</span>
+                </div>
+                <button class="btn btn-primary" onclick="closeInspectModal()">✕ Close & Return to Batch Results</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Giant Status Banner -->
+                <div class="giant-banner banner-pass" id="inspect-status-banner" style="margin-bottom: 1.25rem;">
+                    <div class="banner-icon" id="inspect-banner-icon">✓</div>
+                    <div class="banner-content">
+                        <h2 id="inspect-banner-status-text">PASS - COMPLIANT</h2>
+                        <p id="inspect-banner-summary-text">All required label artwork fields and Government Warning statements match metadata with high confidence.</p>
+                    </div>
+                </div>
+
+                <div class="review-grid">
+                    <!-- Left: Label Artwork Viewer -->
+                    <div class="panel artwork-panel">
+                        <div class="panel-header">
+                            <h2>Label Artwork Image</h2>
+                        </div>
+                        <div class="artwork-box">
+                            <img id="inspect-image-view" src="/labels/pass_01_bourbon.png" alt="Alcohol Label Artwork">
+                        </div>
+                    </div>
+
+                    <!-- Right: Field Verification Cards -->
+                    <div class="panel verification-panel">
+                        <div class="panel-header">
+                            <h2>Label Field Verification</h2>
+                            <span class="speed-tag" id="inspect-speed-tag">Speed: 0.18s</span>
+                        </div>
+
+                        <div class="fields-list" id="inspect-fields-matrix-container">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Human Override Modal -->
+    <div class="modal-overlay hidden" id="override-modal" style="z-index: 1100;">
+        <div class="modal-card">
+            <h2>Record Human Reviewer Override</h2>
+            <p>Application ID: <strong id="modal-app-id">COLA-DEMO-001</strong></p>
+            <p>Field Name: <strong id="modal-field-name">Brand Name</strong></p>
+            
+            <div class="form-group">
+                <label>Change Decision To:</label>
+                <select id="modal-new-status">
+                    <option value="PASS">PASS (Approve Field)</option>
+                    <option value="NEEDS REVIEW">NEEDS REVIEW (Flag for Review)</option>
+                    <option value="REJECT">REJECT (Reject Field)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Human Agent Rationale:</label>
+                <textarea id="modal-reason" rows="3" placeholder="Enter reason for overriding automated decision..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitOverride()">Save Override</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin & Technical Details Modal -->
+    <div class="modal-overlay hidden" id="admin-modal">
+        <div class="modal-card modal-large">
+            <div class="modal-header">
+                <h2 id="admin-modal-title">System & Regulatory Information</h2>
+                <button class="close-btn" onclick="closeAdminModal()">✕</button>
+            </div>
+            <div class="modal-body" id="admin-modal-content">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
