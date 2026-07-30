@@ -590,7 +590,14 @@ async function pollBatchProgress() {
         const data = await res.json();
 
         document.getElementById("batch-status-text").innerText = `Status: ${data.status}`;
-        document.getElementById("batch-speed-text").innerText = `Processing Speed: ${data.average_time_per_label || 0.05}s / label`;
+
+        if (data.processed_items === 0) {
+            document.getElementById("batch-speed-text").innerText = "Processing Speed: Calculating...";
+        } else if (data.status === "COMPLETED") {
+            document.getElementById("batch-speed-text").innerText = `Processing Speed: ${data.average_time_per_label}s / label`;
+        } else {
+            document.getElementById("batch-speed-text").innerText = `Processing Speed: ${data.average_time_per_label}s / label (Live)`;
+        }
 
         const pct = Math.round((data.processed_items / data.total_items) * 100);
         document.getElementById("batch-progress-fill").style.width = `${pct}%`;

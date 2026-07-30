@@ -92,6 +92,18 @@ class BatchProcessorService:
         job["status"] = "COMPLETED"
 
     def get_job_status(self, job_id: str) -> Dict[str, Any]:
-        return self.jobs.get(job_id, {"error": "Job not found"})
+        job = self.jobs.get(job_id)
+        if not job:
+            return {"error": "Job not found"}
+
+        job_copy = dict(job)
+        if job["processed_items"] > 0:
+            current_time = job["end_time"] if job["end_time"] else time.time()
+            elapsed = current_time - job["start_time"]
+            job_copy["average_time_per_label"] = round(elapsed / job["processed_items"], 3)
+        else:
+            job_copy["average_time_per_label"] = 0.0
+
+        return job_copy
 
 batch_service = BatchProcessorService()
