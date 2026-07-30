@@ -282,12 +282,7 @@ def generate_50_samples():
         writer.writeheader()
         writer.writerows(samples)
 
-    with open("sample_data/batch_50_metadata.csv", "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(samples)
-
-    print("Generated 50 high-resolution test label artwork images in sample_data/labels/ and batch_50_metadata.csv")
+    print("Generated 50 high-resolution test label artwork images in sample_data/labels/ and sample_data/applications_metadata.csv")
 
 if __name__ == "__main__":
     generate_50_samples()

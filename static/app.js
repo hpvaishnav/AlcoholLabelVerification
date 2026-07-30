@@ -565,7 +565,7 @@ async function loadDemoBatchDemo() {
 
         const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
         const formData = new FormData();
-        formData.append("csv_file", blob, "batch_50_metadata.csv");
+        formData.append("csv_file", blob, "applications_metadata.csv");
 
         const startRes = await fetch("/api/verify-batch", {
             method: "POST",

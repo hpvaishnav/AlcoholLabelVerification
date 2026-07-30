@@ -38,7 +38,7 @@ The TTB Label Compliance Review Assistant automates field-by-field verification 
 
 ## Sample Benchmark Data & "Needs Review" Examples
 
-The repository includes **50 realistic AI-generated alcohol label artwork images** in `sample_data/labels/` and metadata in `sample_data/batch_50_metadata.csv`, fully committed and pushed to git.
+The repository includes **50 realistic AI-generated alcohol label artwork images** in `sample_data/labels/` and metadata in `sample_data/applications_metadata.csv`, fully committed and pushed to git.
 
 ### Benchmark Dataset Scenarios:
 - **`PASS` Cases (Scenarios 01 – 20)**: Fully compliant label artwork for Bourbon, Scotch, Rye, Wine, Tequila, Rum, Vodka, Gin, IPA, Cider, Brandy, and Mezcal.
