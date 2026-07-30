@@ -594,7 +594,7 @@ body {
     background: rgba(255, 255, 255, 0.03);
 }
 
-/* Buttons */
+/* Buttons & Loading Spinners */
 .btn {
     padding: 0.6rem 1.2rem;
     border-radius: 8px;
@@ -602,11 +602,73 @@ body {
     font-size: 0.95rem;
     border: none;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .btn-primary { background: var(--accent-blue); color: #0b1329; }
 .btn-secondary { background: #1e2e4a; color: var(--text-primary); border: 1px solid var(--border-color); }
 .btn-large { font-size: 1.1rem; padding: 0.85rem 1.75rem; }
+
+.btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    filter: grayscale(30%);
+}
+
+.btn-spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(11, 19, 41, 0.3);
+    border-radius: 50%;
+    border-top-color: #0b1329;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 0.6rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Giant Loading Processing Card */
+.loading-card {
+    background: var(--bg-card);
+    border: 2px solid var(--accent-blue);
+    border-radius: 14px;
+    padding: 2.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.loading-spinner-giant {
+    width: 48px;
+    height: 48px;
+    border: 5px solid rgba(56, 189, 248, 0.2);
+    border-radius: 50%;
+    border-top-color: var(--accent-blue);
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1.25rem auto;
+}
+
+.loading-card h3 {
+    font-size: 1.25rem;
+    color: var(--accent-blue);
+    margin-bottom: 0.5rem;
+    font-weight: 800;
+}
+
+.loading-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* Modals & Sticky Frozen Header */
 .modal-overlay {

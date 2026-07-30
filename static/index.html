@@ -91,8 +91,18 @@
                 </div>
 
                 <div class="upload-action-bar">
-                    <button class="btn btn-primary btn-large" onclick="submitUserSingleUpload()">🔍 Run Compliance Verification</button>
+                    <button class="btn btn-primary btn-large" id="btn-single-verify" onclick="submitUserSingleUpload()">
+                        <span class="btn-spinner hidden" id="spinner-single"></span>
+                        <span id="btn-single-text">🔍 Run Compliance Verification</span>
+                    </button>
                 </div>
+            </div>
+
+            <!-- PROCESSING LOADING CARD -->
+            <div id="single-loading-card" class="loading-card hidden">
+                <div class="loading-spinner-giant"></div>
+                <h3>Running Local OCR & 27 CFR 16 Compliance Verification...</h3>
+                <p>Analyzing label artwork typography, proof, and health warning headers...</p>
             </div>
 
             <!-- RESULTS SECTION (HIDDEN BY DEFAULT UNTIL UPLOAD OR DEMO SELECT) -->
@@ -160,7 +170,10 @@
                 </div>
 
                 <div style="text-align: center; margin-bottom: 1.5rem;">
-                    <button class="btn btn-primary btn-large" onclick="submitBatchUpload()">🚀 Start Batch Processing</button>
+                    <button class="btn btn-primary btn-large" id="btn-batch-verify" onclick="submitBatchUpload()">
+                        <span class="btn-spinner hidden" id="spinner-batch"></span>
+                        <span id="btn-batch-text">🚀 Start Batch Processing</span>
+                    </button>
                 </div>
 
                 <!-- Live Progress Card -->

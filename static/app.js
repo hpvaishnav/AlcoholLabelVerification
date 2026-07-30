@@ -1,4 +1,4 @@
-// TTB Label Compliance Review Assistant - Accessible UI App Logic (Auto-Focus First Rejected Item)
+// TTB Label Compliance Review Assistant - Accessible UI App Logic (Spinner & Disabled Button State)
 
 let selectedImageFile = null;
 let selectedCsvFile = null;
@@ -131,12 +131,24 @@ function handleBatchCsvSelect(event) {
     }
 }
 
-// User Single Upload Submission
+// User Single Upload Submission with Loading Spinner & Button Disabling
 async function submitUserSingleUpload() {
     if (!selectedImageFile) {
         alert("Please select a label artwork image file to verify.");
         return;
     }
+
+    const btn = document.getElementById("btn-single-verify");
+    const spinner = document.getElementById("spinner-single");
+    const btnText = document.getElementById("btn-single-text");
+    const loadingCard = document.getElementById("single-loading-card");
+    const resultsSection = document.getElementById("results-section");
+
+    btn.disabled = true;
+    spinner.classList.remove("hidden");
+    btnText.innerText = "⏳ Running Verification...";
+    loadingCard.classList.remove("hidden");
+    resultsSection.classList.add("hidden");
 
     const formData = new FormData();
     formData.append("image", selectedImageFile);
@@ -163,6 +175,11 @@ async function submitUserSingleUpload() {
     } catch (err) {
         console.error("Error submitting single upload:", err);
         alert("Verification failed. Please check image file.");
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add("hidden");
+        btnText.innerText = "🔍 Run Compliance Verification";
+        loadingCard.classList.add("hidden");
     }
 }
 
@@ -172,6 +189,14 @@ async function submitBatchUpload() {
         alert("Please select multiple label images, a ZIP archive, or a CSV file to run batch verification.");
         return;
     }
+
+    const btn = document.getElementById("btn-batch-verify");
+    const spinner = document.getElementById("spinner-batch");
+    const btnText = document.getElementById("btn-batch-text");
+
+    btn.disabled = true;
+    spinner.classList.remove("hidden");
+    btnText.innerText = "⏳ Submitting Batch Job...";
 
     currentBatchFilter = "ALL";
     updateFilterTileVisuals();
@@ -209,6 +234,10 @@ async function submitBatchUpload() {
 
     } catch (err) {
         console.error("Failed to run batch upload:", err);
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add("hidden");
+        btnText.innerText = "🚀 Start Batch Processing";
     }
 }
 
@@ -216,6 +245,12 @@ async function submitBatchUpload() {
 async function loadDemoScenario(scenarioId) {
     document.getElementById("admin-dropdown-box").classList.add("hidden");
     setMode("single");
+
+    const loadingCard = document.getElementById("single-loading-card");
+    const resultsSection = document.getElementById("results-section");
+
+    loadingCard.classList.remove("hidden");
+    resultsSection.classList.add("hidden");
 
     try {
         const targetCase = allSampleCases.find(c => c.scenario_id === scenarioId || c.application_id.toLowerCase() === scenarioId.toLowerCase()) || allSampleCases[0];
@@ -236,10 +271,12 @@ async function loadDemoScenario(scenarioId) {
 
     } catch (err) {
         console.error("Error loading scenario:", err);
+    } finally {
+        loadingCard.classList.add("hidden");
     }
 }
 
-// Inspect Specific Batch Item Result in Overlay Modal (Auto-Focuses First Rejected Card)
+// Inspect Specific Batch Item Result in Overlay Modal
 function inspectBatchItem(index) {
     const res = activeBatchResults[index];
     if (!res) return;
