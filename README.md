@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# AlcoholLabelVerification
-=======
 # TTB Label Compliance Review Assistant
 
 > **AI-Assisted Verification System for Alcohol Label Compliance Division (TTB Prototype)**
@@ -39,7 +36,45 @@ The TTB Label Compliance Review Assistant automates field-by-field verification 
 
 ---
 
-## Quickstart & Setup Guide
+## Docker Container Deployment
+
+The application includes a production-ready **[Dockerfile](file:///Users/yeshabaxi/Documents/AlcoholLabelVerification/Dockerfile)** that bundles Python 3.11, Tesseract OCR, system dependencies, fonts, and the 50-scenario benchmark suite into a single self-contained container image.
+
+> [!IMPORTANT]
+> **Internet Access Requirement for Building**: An **internet-connected machine** is required during the `docker build` phase to download the base Linux image (`python:3.11-slim`), system packages (`tesseract-ocr`, `libgl1`, etc.), and Python packages via `pip`.
+> 
+> **Offline Execution**: Once the image is built, the running container operates **completely offline and air-gapped** inside your firewall with zero external network connectivity needed.
+
+### 1. Build the Docker Image
+From the project root directory, run:
+
+```bash
+docker build -t ttb-label-compliance:latest .
+```
+
+*Note: During build, `generate_samples.py` runs automatically inside the image to generate all 50 high-resolution benchmark label images and metadata.*
+
+### 2. Run the Container
+Launch the container mapping port `8000`:
+
+```bash
+docker run -d --name ttb-compliance -p 8000:8000 ttb-label-compliance:latest
+```
+
+### 3. Access the Compliance Dashboard
+Open your browser and navigate to:
+**`http://localhost:8000`**
+
+### 4. Stop and Clean Up
+To stop and remove the container:
+
+```bash
+docker stop ttb-compliance && docker rm ttb-compliance
+```
+
+---
+
+## Local Python Quickstart & Setup Guide
 
 ### 1. Prerequisites
 * Python 3.9+ installed on your system.
@@ -78,7 +113,7 @@ OPENAI_API_KEY=your_openai_key_here
 
 ---
 
-## Running the Application
+## Running the Application Locally
 
 ### 1. Generate Sample Test Data
 Generate realistic demo alcohol label artwork (Whiskey, Wine, Tequila, Beer) and corresponding CSV metadata:
@@ -109,20 +144,21 @@ Open your web browser and navigate to:
 ## System Usage Guide
 
 ### Single Label Review
-1. Select the **Single Label Review** tab.
+1. Select the **Check Single Label** tab.
 2. Load one of the pre-rendered demo cases (e.g. *Pass Case*, *Reject Case*, *Government Warning Case*) or upload your own label image and application metadata CSV.
 3. Review the side-by-side comparison:
    - Left: Label artwork viewer with zoom/pan capabilities.
    - Right: Field comparison cards with expected metadata vs extracted OCR text, confidence scores, and explanations.
-4. Test **Human Override**: Click **Override Decision** on any field to manually set status to `Pass`, `Reject`, or `Needs Review` and capture reviewer rationale.
+4. Test **Human Override**: Click **Override** on any field card to manually set status to `PASS`, `REJECT`, or `NEEDS REVIEW` and capture reviewer rationale into audit logs.
 
 ### Batch Upload & Processing
-1. Select the **Batch Processing** tab.
-2. Upload `sample_data/applications_metadata.csv` and a ZIP archive or folder of label artwork files.
-3. Click **Start Batch Review**.
+1. Select the **Check Multiple Labels (Batch)** tab.
+2. Upload multiple label images, a `.ZIP` archive, or attach a metadata CSV file.
+3. Click **Start Batch Processing** or trigger **Run 50-Item Batch Demo** from the top-right Admin menu.
 4. Monitor real-time batch progress (Queued, Processing, Progress Bar, Speed Metric).
-5. Filter batch results by status (`Pass`, `Reject`, `Needs Review`).
-6. Click **Export CSV** or **Export JSON** to download audit compliance reports.
+5. Filter batch results by clicking the top stat tiles (**Passing**, **Needs Human Review**, **Rejected**).
+6. Click **Inspect** on any row to open the modal overlay inspect view with automatic focus on rejected fields.
+7. Click **Download CSV Report** or **Download JSON Audit** to export audit compliance reports.
 
 ---
 
@@ -143,9 +179,11 @@ AlcoholLabelVerification/
 ├── REQUIREMENTS.md          # Business specification document
 ├── ARCHITECTURE.md          # Solution architecture & BOM
 ├── README.md                # Quickstart & user guide
+├── Dockerfile               # Production Docker container build file
+├── .dockerignore            # Docker build ignore patterns
 ├── requirements.txt         # Pinned Python dependencies
 ├── .env.example             # Environment configuration template
-├── generate_samples.py      # Demo test data generator
+├── generate_samples.py      # Benchmark test dataset generator
 ├── app/
 │   ├── main.py              # FastAPI application server
 │   ├── ocr_engine.py        # Local & Cloud hybrid OCR engine
@@ -158,4 +196,3 @@ AlcoholLabelVerification/
 ├── sample_data/             # Generated test artwork & CSVs
 └── tests/                  # Automated unit test suite
 ```
->>>>>>> d58f68f (Initial commit: TTB Label Compliance Review Assistant with 50-Scenario Benchmark and Interactive Batch UI)
