@@ -224,6 +224,9 @@ async function submitBatchUpload() {
 
         if (startRes.status !== 200) {
             alert(startData.detail || "Batch submission failed.");
+            btn.disabled = false;
+            spinner.classList.add("hidden");
+            btnText.innerText = "🚀 Start Batch Processing";
             return;
         }
 
@@ -234,7 +237,6 @@ async function submitBatchUpload() {
 
     } catch (err) {
         console.error("Failed to run batch upload:", err);
-    } finally {
         btn.disabled = false;
         spinner.classList.add("hidden");
         btnText.innerText = "🚀 Start Batch Processing";
@@ -585,6 +587,10 @@ async function loadDemoBatchDemo() {
 async function pollBatchProgress() {
     if (!activeBatchJobId) return;
 
+    const btn = document.getElementById("btn-batch-verify");
+    const spinner = document.getElementById("spinner-batch");
+    const btnText = document.getElementById("btn-batch-text");
+
     try {
         const res = await fetch(`/api/batch-status/${activeBatchJobId}`);
         const data = await res.json();
@@ -609,8 +615,19 @@ async function pollBatchProgress() {
         activeBatchResults = data.results || [];
         renderBatchTable(activeBatchResults);
 
-        if (data.status === "COMPLETED") {
+        if (data.status === "COMPLETED" || data.status === "FAILED") {
             clearInterval(batchPollInterval);
+            if (btn) {
+                btn.disabled = false;
+                spinner.classList.add("hidden");
+                btnText.innerText = "🚀 Start Batch Processing";
+            }
+        } else {
+            if (btn) {
+                btn.disabled = true;
+                spinner.classList.remove("hidden");
+                btnText.innerText = `⏳ Processing Batch (${data.processed_items} / ${data.total_items})...`;
+            }
         }
 
     } catch (err) {
