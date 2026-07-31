@@ -4,48 +4,96 @@
 
 ---
 
-## 1. System Overview & Architecture
+## 1. System Architecture & Component Flow
 
-The TTB Label Compliance Review Assistant is a standalone, AI-assisted verification web application designed for compliance agents at the Alcohol and Tobacco Tax and Trade Bureau (TTB). The architecture consists of a high-performance **Python FastAPI** backend serving an **HTML5/Vanilla JavaScript Single Page Application (SPA)**, powered by a modular local/cloud **OCR Extraction Engine**, a normalized **Fuzzy Matcher & Regulatory Validator**, and an **Asynchronous Batch Processor**.
+The TTB Label Compliance Review Assistant is an AI-assisted verification web application designed for compliance agents at the Alcohol and Tobacco Tax and Trade Bureau (TTB). The system features a **Python FastAPI** backend serving a responsive **HTML5 / Vanilla JavaScript Single Page Application (SPA)**, powered by a modular **OCR Extraction Engine**, a normalized **Fuzzy Matcher & 27 CFR Part 16 Regulatory Validator**, and an **Asynchronous Batch Queue Processor**.
 
-```
- +-------------------------------------------------------------------------+
- |                          WEB USER INTERFACE                             |
- |  Single Label Review | Batch Processing | Audit Log | BOM & Config Tab   |
- +-------------------------------------------------------------------------+
-                                    |  HTTP REST / Web API
-                                    v
- +-------------------------------------------------------------------------+
- |                            FASTAPI BACKEND                              |
- |  /api/verify-single  |  /api/verify-batch  |  /api/export  | /api/config |
- +-------------------------------------------------------------------------+
-            |                                           |
-            v                                           v
- +-----------------------+                   +-----------------------------+
- |  OCR PIPELINE ENGINE  |                   |  BATCH ASYNC PROCESSOR      |
- |  Local (EasyOCR/Tess) |                   |  Background Queue & Worker  |
- |  Optional Cloud API   |                   |  Isolation & Progress Timer |
- +-----------------------+                   +-----------------------------+
-            |                                           |
-            +-------------------+-----------------------+
-                                |
-                                v
- +-------------------------------------------------------------------------+
- |               COMPARATOR & REGULATORY VALIDATOR (27 CFR 16)             |
- |  Text Normalization | RapidFuzz Token Match | Government Warning Rules  |
- |  Confidence Scoring | Decision Engine (Pass/Reject/Needs Review)        |
- +-------------------------------------------------------------------------+
-                                |
-                                v
- +-------------------------------------------------------------------------+
- |                     AUDIT TRAIL & RESULT EXPORT                         |
- |  Human Overrides | JSON Audit Trails | CSV Batch Compliance Summary |
- +-------------------------------------------------------------------------+
+### System Architecture Diagram
+
+```mermaid
+flowchart TD
+    subgraph UI ["Client Interface (HTML5 Dashboard)"]
+        A["👤 Compliance Agent"]
+        B["🔍 Single Label Review"]
+        C["📦 Batch Processing Mode"]
+        D["⚙ Admin & 50-Scenario Menu"]
+    end
+
+    subgraph API ["FastAPI Web Router (app/main.py)"]
+        E["POST /api/verify-single"]
+        F["POST /api/verify-batch"]
+        G["GET /api/batch-status/{job_id}"]
+        H["POST /api/override"]
+    end
+
+    subgraph Services ["Modular Business Services (app/services/)"]
+        I["📷 ocr_service.py\n(PIL Preprocessing & Dual Engine OCR)"]
+        J["⚖ comparator_service.py\n(27 CFR 16 Rules & RapidFuzz Matcher)"]
+        K["⚡ batch_service.py\n(Async Queue & Live Speed Timer)"]
+    end
+
+    subgraph Decision ["Compliance Decision Engine"]
+        L["🟢 PASS\n(Full Compliance)"]
+        M["🟡 NEEDS REVIEW\n(Near Match / Accents / Spacing)"]
+        N["🔴 REJECT\n(Field Mismatch / 27 CFR 16 Violation)"]
+    end
+
+    subgraph Audit ["Audit & Export Layer"]
+        O["📜 Human Override Audit Trail"]
+        P["📊 CSV / JSON Compliance Report"]
+    end
+
+    A --> B & C & D
+    B -->|Upload Image & Metadata| E
+    C -->|Upload Multi-Images / ZIP / CSV| F
+    F -->|Enqueue Job| K
+    K -->|Poll Status| G
+    
+    E --> I
+    K --> I
+    I -->|Raw Text & Parsed Fields| J
+    
+    J --> L & M & N
+    L & M & N -->|Render Results & Modal Overlay| A
+    
+    A -->|Submit Override Rationale| H
+    H --> O
+    G --> P
 ```
 
 ---
 
-## 2. Software Bill of Materials (BOM) & Licenses
+## 2. End-to-End Label Verification Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Agent as Compliance Reviewer
+    participant UI as HTML5 SPA (index.html / app.js)
+    participant API as FastAPI Router (app/main.py)
+    participant OCR as OCR Service (app/services/ocr_service.py)
+    participant Comp as Comparator Service (app/services/comparator_service.py)
+
+    Agent->>UI: Selects Artwork & Clicks "Run Compliance Verification"
+    UI->>UI: Disable Button, Show "⏳ Running Verification..." Spinner
+    UI->>API: POST /api/verify-single (Image File, Metadata)
+    API->>OCR: extract_text_from_image(image_path)
+    OCR->>OCR: PIL Preprocessing (Grayscale, Contrast 1.8x, Sharpening)
+    OCR->>OCR: PyTesseract / PIL Text Extraction & Regex Field Parser
+    OCR-->>API: Return OCRExtractionResult
+    API->>Comp: evaluate_application(metadata, ocr_results)
+    Comp->>Comp: Check Mandatory Fields & RapidFuzz Similarity
+    Comp->>Comp: Validate 27 CFR Part 16 Warning Rules (Header, Clauses)
+    Comp-->>API: Return EvaluationResult (PASS / NEEDS REVIEW / REJECT)
+    API-->>UI: Return JSON Response
+    UI->>UI: Restore Button & Hide Spinner
+    UI->>UI: Reveal Status Banner & Render Field Cards
+    UI->>UI: Auto-Scroll to & Highlight First Rejected Field Card
+```
+
+---
+
+## 3. Software Bill of Materials (BOM) & Licenses
 
 To comply with federal open-source software governance and supply-chain auditing, all core dependencies are pinned to exact version numbers and audited for license compatibility.
 
@@ -61,66 +109,36 @@ To comply with federal open-source software governance and supply-chain auditing
 | **RapidFuzz** | `3.9.3` | MIT | C++ accelerated fuzzy string matching & token set ratio comparison |
 | **OpenCV (Headless)**| `4.9.0.80`| Apache-2.0 | Image preprocessing (grayscale, adaptive thresholding, noise reduction) |
 | **Pandas** | `2.2.2` | BSD-3-Clause | CSV metadata parsing, batch analysis, export formatting |
-| **Jinja2** | `3.1.4` | BSD-3-Clause | Template rendering for UI web components |
-| **Python-Dotenv** | `1.0.1` | BSD-3-Clause | Environment variable configuration loader (`.env`) |
-| **HTTPX** | `0.27.0` | BSD-3-Clause | Async HTTP client for optional Cloud Vision API integration |
 
 ---
 
-## 3. Core Subsystems
+## 4. Core Subsystems
 
-### 3.1 OCR Extraction Engine (`app/ocr_engine.py`)
+### 4.1 OCR Extraction Engine (`app/services/ocr_service.py`)
 The system features a **Hybrid OCR Provider Interface**:
 * **Local Provider (Default)**: Leverages `EasyOCR` / `PyTesseract` after OpenCV preprocessing (adaptive binarization and contrast stretching). Operates 100% offline within local network infrastructure with zero external network calls.
-* **Optional Cloud Provider**: Triggered by setting environment variables `USE_CLOUD_OCR=true` and configuring `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GOOGLE_VISION_API_KEY`. Provides cloud vision inference when evaluating higher-resolution artwork or remote cloud environments.
+* **Optional Cloud Provider**: Triggered by setting environment variable `USE_CLOUD_OCR=true` and configuring `OPENAI_API_KEY`.
 
-#### Extracted Fields:
-1. Brand Name
-2. Class / Type
-3. Alcohol Content (ABV %)
-4. Proof
-5. Net Contents
-6. Bottler / Producer
-7. Country of Origin
-8. Government Warning Statement
-
-### 3.2 Field Normalization & Comparison (`app/comparator.py`)
+### 4.2 Field Normalization & Comparison (`app/services/comparator_service.py`)
 Field comparison uses a multi-tier matching strategy:
 * **String Normalization**: Unicode NFKD normalization, case-folding, punctuation strip, multi-space collapse.
-* **Fuzzy Matcher**: RapidFuzz `token_set_ratio` algorithm to evaluate word permutations and slight OCR transcription variances (e.g. accent marks, trailing punctuation).
+* **Fuzzy Matcher**: RapidFuzz `token_set_ratio` algorithm to evaluate word permutations and slight OCR transcription variances.
 
 #### Decision Threshold Matrix:
-* **PASS (Score ≥ 90%)**: High confidence match.
-* **NEEDS REVIEW (70% ≤ Score < 90%)**: Near match requiring agent verification.
-* **REJECT (Score < 70% or Missing)**: Mismatched or absent mandatory field.
+* **PASS (Score ≥ 80%)**: High confidence match.
+* **NEEDS REVIEW (65% ≤ Score < 80%)**: Near match requiring agent verification.
+* **REJECT (Score < 65% or Missing)**: Mismatched or absent mandatory field.
 
-### 3.3 Strict Government Warning Validation (27 CFR Part 16)
+### 4.3 Strict Government Warning Validation (27 CFR Part 16)
 The Government Warning statement is subjected to explicit regulatory rules:
-1. **Mandatory Header**: Verifies presence of uppercase string `"GOVERNMENT WARNING:"`. If header is lowercase or missing, decision resolves to `REJECT` or `NEEDS REVIEW`.
+1. **Mandatory Header**: Verifies presence of uppercase string `"GOVERNMENT WARNING:"`. If header is lowercase or missing, decision resolves to `REJECT`.
 2. **Surgeon General Statement**: Verifies exact text regarding pregnancy risks and birth defects.
 3. **Impairment Statement**: Verifies exact text regarding operating machinery or driving a car.
 
-### 3.4 Asynchronous Batch Processor (`app/batch_processor.py`)
+### 4.4 Asynchronous Batch Processor (`app/services/batch_service.py`)
 * Uses Python `asyncio` background task queues.
-* **Isolation**: Individual label failures are caught and logged as `Needs Review` or `Failed` without halting batch progression.
+* **Live Running Speed Metric**: Dynamically calculates running average processing speed ($t / n$) every 300ms.
 * Target execution throughput: **≤ 5 seconds per label**.
-
----
-
-## 4. Data Flow Architecture
-
-```
-[User CSV + Images] --> [API Upload] --> [Preprocessing (OpenCV)]
-                                              |
-                                              v
-[Field Comparison Engine] <--- [Text Extraction] <--- [Local / Cloud OCR Engine]
-           |
-           v
-[Government Warning Rules] --> [Decision Matrix (Pass/Reject/Needs Review)]
-                                              |
-                                              v
-[Human Override Modal] ------> [JSON / CSV Audit Trail Export]
-```
 
 ---
 
